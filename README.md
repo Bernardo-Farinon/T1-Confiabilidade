@@ -7,7 +7,7 @@ Este projeto implementa a verificação formal (FPV) e baseada em simulação de
 ## Resultados da Simulação
 
 ### Testbench - 20 Casos de Teste
-
+```bash
  === single cycle ===
  
  === Starting test: unsigned*unsigned, a=1, b=1, low=1, single_cycle=1 ===
