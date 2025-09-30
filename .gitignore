@@ -1,0 +1,24 @@
+# Questa/ModelSim
+work/
+transcript
+vsim.wlf
+modelsim.ini
+
+# JasperGold  
+.jaspergold/
+fpv_work/
+
+# Build artifacts
+build/
+*.log
+*.ucdb
+*.rpt
+
+# Backup files
+*~
+*.bak
+*.tmp
+
+# OS files
+.DS_Store
+Thumbs.db
