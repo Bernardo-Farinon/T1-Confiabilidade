@@ -1,6 +1,10 @@
 
 # Trabalho T1 - Verificação de Multiplicador
 
+## Estrutura do Projeto
+
+![Estrutura do Projeto](img/est.png)
+
 ## Descrição
 Este projeto implementa a verificação formal (FPV) e baseada em simulação de um multiplicador RISC-V.
 
@@ -160,8 +164,8 @@ Este projeto implementa a verificação formal (FPV) e baseada em simulação de
 
 ### Como Executar
 ```bash
-cd scripts
-vsim -do run_questa.do
+~/T1-Confiabilidade
+vsim -do scripts/run_questa.do
 ```
 
 ### Verificação Formal (FPV)
@@ -170,5 +174,5 @@ vsim -do run_questa.do
 
 ### Como Executar
 ```bash
-cd scripts
-vsim -do run_questa.do
+~/T1-Confiabilidade
+jaspergold scripts/run_jasper.tcl

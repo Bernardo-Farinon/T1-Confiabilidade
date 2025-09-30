@@ -11,7 +11,7 @@ compile:
 	vlog -sv -work $(BUILD_DIR) tb/mul_tb.sv
 
 sim: compile
-	@echo "=== INICIANDO SIMULAÇÃO ==="
+	@echo "=== INICIANDO SIMULACAO ==="
 	vsim -c -do "run -all; quit" -lib $(BUILD_DIR) mul_tb
 
 clean:
