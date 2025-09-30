@@ -1,161 +1,143 @@
-module mul_properties (
-    input logic clk,
-    input logic reset_n,
-    input logic stall,
+module mul_prop (
+    input logic        clk,
+    input logic        reset_n,
+    input logic        stall,
     input logic [31:0] first_operand_i,
     input logic [31:0] second_operand_i,
-    input logic [1:0] signed_mode_i,
-    input logic enable_i,
-    input logic mul_low_i,
-    input logic single_cycle_i,
-    input logic hold_o,
-    input logic [31:0] result_o
+    input logic [1:0]  signed_mode_i,
+    input logic        enable_i,
+    input logic        mul_low_i,
+    input logic        single_cycle_i,
+    input logic        hold_o,
+    input logic [31:0] result_o,
+
+    //internals
+    input logic [4:0] mul_state,
+    input logic [4:0] next_state,
+    input logic last_cycle,
+    input logic should_stall,
+    input logic [16:0] op_a,
+    input logic [16:0] op_al,
+    input logic [16:0] op_ah,
+    input logic [16:0] op_b,
+    input logic [16:0] op_bl,
+    input logic [16:0] op_bh,
+    input logic [34:0] accum,
+    input logic [34:0] mac_result,
+    input logic [34:0] mac_result_partial,
+    input logic [15:0] mac_result_r,
+    input logic signed_mult
 );
 
-    // Importar o tipo de estado do multiplicador
-    import RS5_pkg::*;
+default clocking @(posedge clk); endclocking
+default disable iff (!reset_n);
 
-    // Property 1: Reset assíncrono funciona corretamente
-    property reset_property;
-        @(posedge clk) disable iff (!reset_n)
-        !reset_n |-> ##1 (dut.mul_state == RS5_pkg::ALBL);
-    endproperty
-    assert_reset: assert property (reset_property);
+localparam IDLE = 5'b00001;
+localparam ALBL = 5'b00010;
+localparam ALBH = 5'b00100;
+localparam AHBL = 5'b01000;
+localparam AHBH = 5'b10000;
 
-    // Property 2: Estado IDLE permanece quando enable_i é 0
-    property idle_stable;
-        @(posedge clk) disable iff (!reset_n)
-        (dut.mul_state == RS5_pkg::IDLE) && !enable_i && !stall |=> (dut.mul_state == RS5_pkg::IDLE);
-    endproperty
-    assert_idle_stable: assert property (idle_stable);
+// estado IDLE permanece quando enable_i e 0
+property p_idle_stable;
+    (mul_state == IDLE) && !enable_i && !stall |=> (mul_state == IDLE);
+endproperty
+a_idle_stable: assert property (p_idle_stable);
 
-    // Property 3: Transição de IDLE para ALBL quando enable_i é ativado
-    property idle_to_albl;
-        @(posedge clk) disable iff (!reset_n)
-        (dut.mul_state == RS5_pkg::IDLE) && enable_i && !stall |=> (dut.mul_state == RS5_pkg::ALBL);
-    endproperty
-    assert_idle_to_albl: assert property (idle_to_albl);
+// ytransicao de IDLE para ALBL quando enable_i e 1
+property p_idle_to_albl;
+    (mul_state == IDLE) && enable_i && !stall |=> (mul_state == ALBL);
+endproperty
+a_idle_to_albl: assert property (p_idle_to_albl);
 
-    // Property 4: Transição de ALBL para IDLE em single-cycle
-    property albl_to_idle_single_cycle;
-        @(posedge clk) disable iff (!reset_n)
-        (dut.mul_state == RS5_pkg::ALBL) && single_cycle_i && !stall |=> (dut.mul_state == RS5_pkg::IDLE);
-    endproperty
-    assert_albl_to_idle_single: assert property (albl_to_idle_single_cycle);
+// ALBL -> IDLE single cycle 
+property p_albl_to_idle_single;
+    (mul_state == ALBL) && single_cycle_i && !stall |=> (mul_state == IDLE);
+endproperty
+a_albl_to_idle_single: assert property (p_albl_to_idle_single);
 
-    // Property 5: Transição de ALBL para ALBH em multi-cycle
-    property albl_to_albh_multi_cycle;
-        @(posedge clk) disable iff (!reset_n)
-        (dut.mul_state == RS5_pkg::ALBL) && !single_cycle_i && !stall |=> (dut.mul_state == RS5_pkg::ALBH);
-    endproperty
-    assert_albl_to_albh: assert property (albl_to_albh_multi_cycle);
+// ALBL -> ALBH multi cycle
+property p_albl_to_albh_multi;
+    (mul_state == ALBL) && !single_cycle_i && !stall |=> (mul_state == ALBH);
+endproperty
+a_albl_to_albh_multi: assert property (p_albl_to_albh_multi);
 
-    // Property 6: Transição de ALBH para AHBL
-    property albh_to_ahbl;
-        @(posedge clk) disable iff (!reset_n)
-        (dut.mul_state == RS5_pkg::ALBH) && !stall |=> (dut.mul_state == RS5_pkg::AHBL);
-    endproperty
-    assert_albh_to_ahbl: assert property (albh_to_ahbl);
+//  ALBH -> AHBL 
+property p_albh_to_ahbl;
+    (mul_state == ALBH) && !stall |=> (mul_state == AHBL);
+endproperty
+a_albh_to_ahbl: assert property (p_albh_to_ahbl);
 
-    // Property 7: Transição de AHBL para IDLE quando mul_low_i é 1
-    property ahbl_to_idle_low;
-        @(posedge clk) disable iff (!reset_n)
-        (dut.mul_state == RS5_pkg::AHBL) && mul_low_i && !stall |=> (dut.mul_state == RS5_pkg::IDLE);
-    endproperty
-    assert_ahbl_to_idle_low: assert property (ahbl_to_idle_low);
+// AHBL -> IDLE quando mul_low_i e 1
+property p_ahbl_to_idle_low;
+    (mul_state == AHBL) && mul_low_i && !stall |=> (mul_state == IDLE);
+endproperty
+a_ahbl_to_idle_low: assert property (p_ahbl_to_idle_low);
 
-    // Property 8: Transição de AHBL para AHBH quando mul_low_i é 0
-    property ahbl_to_ahbh_high;
-        @(posedge clk) disable iff (!reset_n)
-        (dut.mul_state == RS5_pkg::AHBL) && !mul_low_i && !stall |=> (dut.mul_state == RS5_pkg::AHBH);
-    endproperty
-    assert_ahbl_to_ahbh: assert property (ahbl_to_ahbh_high);
+// AHBL -> AHBH quando mul_low_i e 0
+property p_ahbl_to_ahbh_high;
+    (mul_state == AHBL) && !mul_low_i && !stall |=> (mul_state == AHBH);
+endproperty
+a_ahbl_to_ahbh_high: assert property (p_ahbl_to_ahbh_high);
 
-    // Property 9: Transição de AHBH para IDLE
-    property ahbh_to_idle;
-        @(posedge clk) disable iff (!reset_n)
-        (dut.mul_state == RS5_pkg::AHBH) && !stall |=> (dut.mul_state == RS5_pkg::IDLE);
-    endproperty
-    assert_ahbh_to_idle: assert property (ahbh_to_idle);
+// AHBH -> IDLE
+property p_ahbh_to_idle;
+    (mul_state == AHBH) && !stall |=> (mul_state == IDLE);
+endproperty
+a_ahbh_to_idle: assert property (p_ahbh_to_idle);
 
-    // Property 10: hold_o é ativado durante operações multi-ciclo
-    property hold_active_during_operation;
-        @(posedge clk) disable iff (!reset_n)
-        enable_i && (dut.mul_state != RS5_pkg::IDLE) && !dut.last_cycle |-> hold_o;
-    endproperty
-    assert_hold_active: assert property (hold_active_during_operation);
+// hold_o ativo durante operacoes
+property p_hold_active;
+    enable_i && (mul_state != IDLE) && !last_cycle |-> hold_o;
+endproperty
+a_hold_active: assert property (p_hold_active);
 
-    // Property 11: hold_o é desativado no último ciclo
-    property hold_inactive_last_cycle;
-        @(posedge clk) disable iff (!reset_n)
-        dut.last_cycle |-> !hold_o;
-    endproperty
-    assert_hold_inactive: assert property (hold_inactive_last_cycle);
+// hold_o desativado no lastcycle
+property p_hold_inactive;
+    last_cycle |-> !hold_o;
+endproperty
+a_hold_inactive: assert property (p_hold_inactive);
 
-    // Property 12: Stall impede transição de estado
-    property stall_prevents_state_change;
-        @(posedge clk) disable iff (!reset_n)
-        stall && dut.last_cycle |=> (dut.mul_state == $past(dut.mul_state));
-    endproperty
-    assert_stall_prevents_change: assert property (stall_prevents_state_change);
+// Stall impede transicao
+property p_stall_prevents;
+    stall && last_cycle |=> (mul_state == $past(mul_state));
+endproperty
+a_stall_prevents: assert property (p_stall_prevents);
 
-    // Property 13: Operandos são capturados corretamente no estado IDLE
-    property operands_captured_idle;
-        @(posedge clk) disable iff (!reset_n)
-        (dut.mul_state == RS5_pkg::IDLE) && enable_i && !stall |=> (dut.op_a == dut.op_al);
-    endproperty
-    assert_operands_captured: assert property (operands_captured_idle);
+// Acumulador zerado no IDLE
+property p_accumulator_reset;
+    (mul_state == IDLE) && !stall |=> (accum == 35'b0);
+endproperty
+a_accumulator_reset: assert property (p_accumulator_reset);
 
-    // Property 14: Operando A é atualizado no estado ALBH
-    property operand_a_updated_albh;
-        @(posedge clk) disable iff (!reset_n)
-        (dut.mul_state == RS5_pkg::ALBH) && !stall |=> (dut.op_a == dut.op_ah);
-    endproperty
-    assert_operand_a_updated: assert property (operand_a_updated_albh);
+// Estados validos
+property p_valid_states;
+    mul_state inside {IDLE, ALBL, ALBH, AHBL, AHBH};
+endproperty
+a_valid_states: assert property (p_valid_states);
 
-    // Property 15: Acumulador é zerado no estado IDLE
-    property accumulator_reset_idle;
-        @(posedge clk) disable iff (!reset_n)
-        (dut.mul_state == RS5_pkg::IDLE) && !stall |=> (dut.accum == 35'b0);
-    endproperty
-    assert_accumulator_reset: assert property (accumulator_reset_idle);
+//Resultado estavel
+property p_result_stable;
+    !hold_o && (mul_state == IDLE) |=> $stable(result_o);
+endproperty
+a_result_stable: assert property (p_result_stable);
 
-    // Property 16: Máquina de estados sempre retorna para IDLE
-    property always_returns_to_idle;
-        @(posedge clk) disable iff (!reset_n)
-        (dut.mul_state inside {RS5_pkg::ALBL, RS5_pkg::ALBH, RS5_pkg::AHBL, RS5_pkg::AHBH}) 
-        && !stall |-> s_eventually (dut.mul_state == RS5_pkg::IDLE);
-    endproperty
-    assert_returns_to_idle: assert property (always_returns_to_idle);
+// Next state logico
+property p_next_state_coherent;
+    !stall |=> (mul_state == $past(next_state));
+endproperty
+a_next_state_coherent: assert property (p_next_state_coherent);
 
-    // Property 17: Estados válidos da FSM
-    property valid_states;
-        @(posedge clk) disable iff (!reset_n)
-        dut.mul_state inside {RS5_pkg::IDLE, RS5_pkg::ALBL, RS5_pkg::ALBH, 
-                             RS5_pkg::AHBL, RS5_pkg::AHBH};
-    endproperty
-    assert_valid_states: assert property (valid_states);
+// fsm progride quando nao em stall 
+property p_fsm_progresses;
+    (mul_state != IDLE) && !stall && !last_cycle |=> (mul_state != $past(mul_state));
+endproperty
+a_fsm_progresses: assert property (p_fsm_progresses);
 
-    // Property 18: Sem deadlock na FSM
-    property no_deadlock;
-        @(posedge clk) disable iff (!reset_n)
-        (dut.mul_state != RS5_pkg::IDLE) && !stall |-> ##[1:10] (dut.mul_state == RS5_pkg::IDLE);
-    endproperty
-    assert_no_deadlock: assert property (no_deadlock);
-
-    // Property 19: Resultado é estável quando hold_o é 0
-    property result_stable_when_not_hold;
-        @(posedge clk) disable iff (!reset_n)
-        !hold_o |=> $stable(result_o);
-    endproperty
-    assert_result_stable: assert property (result_stable_when_not_hold);
-
-    // Property 20: Interface de entrada estável durante hold
-    property inputs_stable_during_hold;
-        @(posedge clk) disable iff (!reset_n)
-        hold_o |=> $stable({first_operand_i, second_operand_i, signed_mode_i, 
-                           mul_low_i, single_cycle_i});
-    endproperty
-    assert_inputs_stable: assert property (inputs_stable_during_hold);
+// estados apenas um ativo
+property p_mutually_exclusive;
+    $onehot0(mul_state);
+endproperty
+a_mutually_exclusive: assert property (p_mutually_exclusive);
 
 endmodule

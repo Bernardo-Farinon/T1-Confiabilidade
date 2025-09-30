@@ -4,10 +4,44 @@
 ## Descrição
 Este projeto implementa a verificação formal (FPV) e baseada em simulação de um multiplicador RISC-V.
 
-## Resultados da Simulação
+- **Simulação**: testbench com casos de teste cobrindo diferentes operações.
+- **Verificação Formal (FPV)**: propriedades em SystemVerilog Assertions (SVA) checando fsm e sinais de controle.
 
 ### Testbench - 20 Casos de Teste
+
 ```bash
+ Top level modules:
+ 	--none--
+ End time: 13:52:20 on Sep 30,2025, Elapsed time: 0:00:00
+ Errors: 0, Warnings: 0
+ QuestaSim-64 vlog 2023.4 Compiler 2023.10 Oct  9 2023
+ Start time: 13:52:21 on Sep 30,2025
+ vlog -reportprogress 300 -sv ../rtl/mul.sv 
+ -- Compiling package RS5_pkg
+ -- Compiling module mul
+ -- Importing package RS5_pkg
+ 
+ Top level modules:
+ 	mul
+ End time: 13:52:21 on Sep 30,2025, Elapsed time: 0:00:00
+ Errors: 0, Warnings: 0
+ QuestaSim-64 vlog 2023.4 Compiler 2023.10 Oct  9 2023
+ Start time: 13:52:22 on Sep 30,2025
+ vlog -reportprogress 300 -sv ../tb/mul_tb.sv 
+ -- Compiling module mul_tb
+ 
+ Top level modules:
+ 	mul_tb
+ End time: 13:52:22 on Sep 30,2025, Elapsed time: 0:00:00
+ Errors: 0, Warnings: 0
+ vsim work.mul_tb 
+ Start time: 13:52:23 on Sep 30,2025
+ ** Note: (vsim-8009) Loading existing optimized design _opt
+ Loading sv_std.std
+ Loading work.RS5_pkg(fast)
+ Loading work.mul_tb(fast)
+ === inicio teste ===
+ 
  === single cycle ===
  
  === Starting test: unsigned*unsigned, a=1, b=1, low=1, single_cycle=1 ===
@@ -43,8 +77,7 @@ Este projeto implementa a verificação formal (FPV) e baseada em simulação de
  Expected result: 00000001
  single cycle ALBL: 00000001
  >>> TEST RESULT: PASS
-
-
+ 
  === multi cycle ===
  
  === Starting test: unsigned*unsigned, a=10, b=3, low=1, single_cycle=0 ===
@@ -115,10 +148,25 @@ Este projeto implementa a verificação formal (FPV) e baseada em simulação de
  Expected result: ffffffff
  multi cycle result: ffffffff
  >>> TEST RESULT: PASS
-
+ 
  === testes completos ===
  ** Note: $finish    : ../tb/mul_tb.sv(166)
     Time: 1215 ns  Iteration: 0  Instance: /mul_tb
+ 1
+ Break at ../tb/mul_tb.sv line 166
+ End time: 13:54:54 on Sep 30,2025, Elapsed time: 0:02:31
+ Errors: 4, Warnings: 0
+```
+
+### Como Executar
+```bash
+cd scripts
+vsim -do run_questa.do
+```
+
+### Verificação Formal (FPV)
+
+![Resultado JasperGold](img/jsp.png)
 
 ### Como Executar
 ```bash

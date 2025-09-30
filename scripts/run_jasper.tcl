@@ -1,26 +1,24 @@
-# Script para Verificação Formal jasper
+clear -all
 
-# Carregar arquivos de design
-read_file -type systemverilog ../rtl/RS5_pkg.sv
-read_file -type systemverilog ../rtl/mul.sv
+# analyze -sv
+analyze -sv ./rtl/RS5_pkg.sv
+analyze -sv ./rtl/mul.sv
 
-# Carregar propriedades FPV
-read_file -type systemverilog ../fpv/mul_properties.sv
-read_file -type systemverilog ../fpv/mul_binding.sv
+# Analyze property files
+analyze -sv ./fpv/mul_properties.sv
+analyze -sv ./fpv/mul_bindings.sv
 
-# Configurar top module
-set_top mul
+# elaborate the design, point to the design top level
+elaborate -top {mul}
 
-# Configurar clock e reset
-clock clk
-reset !reset_n
+# Set up Clocks and Resets
+clock clk -factor 1 -phase 1
+reset -expression {reset_n == 0}
 
-# Compilar design
-compile
+# get designs statistics
+get_design_info
 
-# Verificar todas as propriedades
-check_prove -all
+prove -all
 
-# Gerar relatório
-report -type status
-report -type proof
+# Report proof results
+report

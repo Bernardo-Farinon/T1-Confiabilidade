@@ -15,7 +15,20 @@ module mul_bind_top;
 
     // internals 
     .mul_state          (mul_state),
-    .next_state         (next_state)
+    .next_state         (next_state),
+    .last_cycle         (last_cycle),
+    .should_stall       (should_stall),
+    .op_a               (op_a),
+    .op_al              (op_al),
+    .op_ah              (op_ah),
+    .op_b               (op_b),
+    .op_bl              (op_bl),
+    .op_bh              (op_bh),
+    .accum              (accum),
+    .mac_result         (mac_result),
+    .mac_result_partial (mac_result_partial),
+    .mac_result_r       (mac_result_r),
+    .signed_mult        (signed_mult)
   );
 
 endmodule
