@@ -3,7 +3,7 @@
 
 ## Estrutura do Projeto
 
-![Estrutura do Projeto](img/est.png)
+![Estrutura do Projeto](img/estrut.png)
 
 ## Descrição
 Este projeto implementa a verificação formal (FPV) e baseada em simulação de um multiplicador RISC-V.
@@ -176,3 +176,4 @@ vsim -do scripts/run_questa.do
 ```bash
 ~/T1-Confiabilidade
 jaspergold scripts/run_jasper.tcl
+
